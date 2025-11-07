@@ -1,0 +1,18 @@
+# Build artifacts
+sender
+receiver
+*.o
+*.a
+*.so
+*.dylib
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
