@@ -89,6 +89,9 @@ int main(int argc, char** argv) {
 
     int reuse = 1;
     setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+#ifdef SO_REUSEPORT
+    setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
+#endif
 
     struct sockaddr_in6 local{};
     local.sin6_family = AF_INET6;
@@ -99,11 +102,14 @@ int main(int argc, char** argv) {
     struct ipv6_mreq mreq{};
     if (inet_pton(AF_INET6, addr.c_str(), &mreq.ipv6mr_multiaddr) != 1) {
         std::cerr << "Error: invalid IPv6 address: " << addr << "\n";
-    } else {
-        mreq.ipv6mr_interface = ifindex;
-        if (setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0) {
-            perror("setsockopt(IPV6_JOIN_GROUP)");
-        }
+        close(sock);
+        return 4;
+    }
+    mreq.ipv6mr_interface = ifindex;
+    if (setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, &mreq, sizeof(mreq)) < 0) {
+        perror("setsockopt(IPV6_JOIN_GROUP)");
+        close(sock);
+        return 5;
     }
 
     // recv timeout
