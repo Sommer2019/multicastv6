@@ -56,3 +56,16 @@ Wichtige Hinweise
 - Stream‑ID Einzigartigkeit: Wenn zwei Sender dieselbe stream_id nutzen, mischen sich ihre Pakete => Kaputtes Ergebnis.
 - Netz: Multicast muss im LAN erlaubt sein; bei Link‑Local Adressen (-a ff02::...) muss -i gesetzt werden.
 - UDP bleibt unzuverlässig: kein Retransmission/FEC in dieser Implementierung.
+
+Netzwerk Anforderungen
+- IPv6 muss aktiviert sein auf allen beteiligten Hosts
+- Multicast Routing/Forwarding muss im LAN erlaubt sein
+- Bei Router/Firewall: IPv6 Multicast Traffic muss durchgelassen werden (ICMPv6, MLD)
+- Für Link‑Local Multicast (ff02::/16): Interface mit -i Parameter angeben (erforderlich)
+- Für Site‑Local/Global Multicast (ff05::/16, ff0e::/16): Interface optional aber empfohlen
+- SO_REUSEPORT wird unterstützt für mehrere Empfänger auf demselben Host
+
+Typische Fehlerursachen
+- "Cannot join multicast group": Falsches Interface, Multicast nicht unterstützt, oder keine IPv6 Routing
+- "No packets received": Firewall blockiert, falsches Interface, oder Sender/Empfänger in verschiedenen Netzen
+- "Incomplete file": UDP Paketverlust (normal), zu hohe PPS Rate, oder Netzwerk überlastet

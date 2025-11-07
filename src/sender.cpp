@@ -70,12 +70,18 @@ int main(int argc, char** argv) {
     }
 
     int hops = 64;
-    setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &hops, sizeof(hops));
+    if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_HOPS, &hops, sizeof(hops)) < 0) {
+        perror("setsockopt(IPV6_MULTICAST_HOPS)");
+    }
 
     unsigned int ifindex = 0;
     if (!iface.empty()) {
         ifindex = if_nametoindex(iface.c_str());
-        if (ifindex != 0) setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex));
+        if (ifindex == 0) {
+            std::cerr << "Warning: interface not found: " << iface << "\n";
+        } else if (setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex)) < 0) {
+            perror("setsockopt(IPV6_MULTICAST_IF)");
+        }
     }
 
     struct sockaddr_in6 dst;

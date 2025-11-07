@@ -1,0 +1,21 @@
+# Build artifacts
+sender
+receiver
+*.o
+*.a
+*.so
+*.dylib
+
+# Editor and IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# CodeQL
+_codeql_detected_source_root
