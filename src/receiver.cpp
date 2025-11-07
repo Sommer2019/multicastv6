@@ -88,9 +88,13 @@ int main(int argc, char** argv) {
     if (sock < 0) { perror("socket"); return 2; }
 
     int reuse = 1;
-    setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse));
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+        perror("setsockopt(SO_REUSEADDR)");
+    }
 #ifdef SO_REUSEPORT
-    setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse));
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEPORT, &reuse, sizeof(reuse)) < 0) {
+        perror("setsockopt(SO_REUSEPORT)");
+    }
 #endif
 
     struct sockaddr_in6 local{};
@@ -116,7 +120,9 @@ int main(int argc, char** argv) {
     struct timeval tv{};
     tv.tv_sec = 1;
     tv.tv_usec = 0;
-    setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+        perror("setsockopt(SO_RCVTIMEO)");
+    }
 
     std::cerr << "Listening on [" << addr << "]:" << port << " (iface=" << iface << "), subscribe=" << subscribe << "\n";
 
