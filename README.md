@@ -27,4 +27,3 @@ Troubleshooting
 - Prüfe Gruppenmitgliedschaft auf dem Empfänger: `ip -6 maddr show dev eth0`
 - Siehe Netzwerkverkehr: `sudo tcpdump -n -i eth0 'ip6 and udp and port 12345'`
 - Firewall: `sudo ip6tables -A INPUT -p udp --dport 12345 -j ACCEPT`
-
