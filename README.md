@@ -1,65 +1,58 @@
-# multicastv6 — Video Roundsend über IPv6 Multicast (C++)
+# multicastv6 — Video Roundsend über IPv6 Multicast (C++ mit Stream‑ID)
 
-Diese Version stellt eine reine C++-Implementierung (Sender + Receiver) bereit, die auf Debian-Systemen einfach gebaut werden kann.
+Diese Version erlaubt mehrere Sender in derselben Multicast‑Gruppe/Port, indem jedem Stream eine stream_id zugewiesen wird. Receiver können sich gezielt für einen oder mehrere Streams entscheiden.
 
-Enthaltene Dateien
-- src/sender.cpp   — C++ IPv6 Multicast Sender
-- src/receiver.cpp — C++ IPv6 Multicast Receiver
-- Makefile         — Build / install targets
-
-Voraussetzungen (Debian)
-- build-essential (g++, make)
+Build Voraussetzungen (Debian)
+- build-essential:
   sudo apt update
   sudo apt install -y build-essential
 
 Build
-1. Im Repository-Verzeichnis:
+1. Im Repo‑Root:
    make
 
-   Das erzeugt zwei Binaries im aktuellen Verzeichnis:
-   - ./sender
-   - ./receiver
+Das erzeugt:
+- ./sender
+- ./receiver
 
-Install (optional)
-   sudo make install
-Das installiert Binaries nach /usr/local/bin (ändere PREFIX falls gewünscht).
+Usage — Sender
+- Beispiel: Sender mit stream_id 42
+  ./sender -f input.mp4 -S 42 -a ff3e::1 -p 12345 -i eth0 -r 800
 
-Verwendung / Beispiele
-- Sender (Server):
-  ./sender -f input.mp4 -a ff3e::1 -p 12345 -i eth0 -r 800
+Argumente:
+- -f, --file       : Pfad zur Datei (erforderlich)
+- -S, --stream-id  : stream_id (uint32, default 1)
+- -a, --addr       : IPv6 Multicast Adresse (default ff3e::1)
+- -p, --port       : UDP Port (default 12345)
+- -i, --iface      : Interface Name (bei link-local Adressen erforderlich)
+- -r, --pps        : Pakete pro Sekunde (0 = so schnell wie möglich)
 
-  Parameter:
-  - -f, --file    : Pfad zur zu sendenden Datei (erforderlich)
-  - -a, --addr    : IPv6 Multicast-Adresse (default ff3e::1)
-  - -p, --port    : UDP Port (default 12345)
-  - -i, --iface   : Interface-Name (bei link-local ff02:: Adressen erforderlich)
-  - -r, --pps     : Pakete pro Sekunde (0 = so schnell wie möglich)
+Usage — Receiver
+- Subscribe zu einem Stream:
+  ./receiver -s 42 -o out_{id}.mp4 -a ff3e::1 -p 12345 -i eth0
 
-- Receiver (Client):
-  ./receiver -o out.mp4 -a ff3e::1 -p 12345 -i eth0
+- Subscribe zu mehreren Streams:
+  ./receiver -s 42,43 -o stream_{id}.mp4 -a ff3e::1 -p 12345 -i eth0
 
-  Parameter:
-  - -o, --out     : Ausgabedatei ('-' für stdout)
-  - -t, --timeout : Sekunden warten auf fehlende Pakete nach Finalmarker (default 10)
+- Subscribe zu allen Streams (Dynamic):
+  ./receiver -s all -o stream_{id}.mp4 -a ff3e::1 -p 12345 -i eth0
 
-Playback während Empfang
-- Empfänger schreibt auf stdout und pipe zu ffplay:
-  ./receiver -o - -a ff3e::1 -p 12345 -i eth0 | ffplay -i -
+- Direct playback for single stream to ffplay:
+  ./receiver -s 42 -o - -a ff3e::1 -p 12345 -i eth0 | ffplay -i -
 
-Hinweise / Troubleshooting
-- Link-local Adressen (ff02::/16) benötigen die Angabe der Schnittstelle (-i).
-- Prüfe Gruppenmitgliedschaft:
-  ip -6 maddr show dev eth0
-- Beobachte Netzverkehr:
-  sudo tcpdump -n -i eth0 'ip6 and udp and port 12345'
-- Firewall:
-  sudo ip6tables -A INPUT -p udp --dport 12345 -j ACCEPT
+Parameter:
+- -s, --subscribe  : "all" oder kommagetrennte Liste von stream_ids
+- -o, --out        : Output pattern, benutzen Sie "{id}" als Platzhalter (z.B. "out_{id}.mp4"), oder "-" für stdout wenn nur ein Stream abonniert
+- -t, --timeout    : Sekunden warten auf fehlende Pakete nach Finalmarker (default 10)
 
-Protokollformat
-- Pro Paket wird ein 8-Byte Header gesendet:
-  - 4 bytes: sequence (big-endian uint32)
-  - 4 bytes: flags    (big-endian uint32) -> bit 0 = final
-- Payload pro UDP-Paket: 1200 bytes
-- Receiver puffert Out‑of‑Order Pakete und schreibt in Reihenfolge.
-- Keine Retransmission oder FEC; geeignet für kontrollierte LAN-Umgebungen.
-```
+Beispiele — Multi‑Sender/All‑to‑All
+- Jeder Host wählt eine eindeutige stream_id (z. B. Hostnummer) und sendet:
+  ./sender -f hostA.mp4 -S 101 -a ff3e::1 -p 12345 -i eth0
+
+- Ein Empfänger, der alle Streams empfangen will:
+  ./receiver -s all -o stream_{id}.mp4 -a ff3e::1 -p 12345 -i eth0
+
+Wichtige Hinweise
+- Stream‑ID Einzigartigkeit: Wenn zwei Sender dieselbe stream_id nutzen, mischen sich ihre Pakete => Kaputtes Ergebnis.
+- Netz: Multicast muss im LAN erlaubt sein; bei Link‑Local Adressen (-a ff02::...) muss -i gesetzt werden.
+- UDP bleibt unzuverlässig: kein Retransmission/FEC in dieser Implementierung.
